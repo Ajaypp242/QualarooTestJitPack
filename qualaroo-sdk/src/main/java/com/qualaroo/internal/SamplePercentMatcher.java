@@ -1,5 +1,7 @@
 package com.qualaroo.internal;
 
+import android.util.Log;
+
 import com.qualaroo.internal.model.Survey;
 
 public class SamplePercentMatcher extends SurveySpecMatcher {
@@ -16,6 +18,7 @@ public class SamplePercentMatcher extends SurveySpecMatcher {
             return true;
         }
         int percent = percentageProvider.userGroupPercent(survey);
+        Log.d("SPECMATCHERS", "SamplePercentMatcher " + String.valueOf(percent < samplePercent));
         return percent < samplePercent;
     }
 }

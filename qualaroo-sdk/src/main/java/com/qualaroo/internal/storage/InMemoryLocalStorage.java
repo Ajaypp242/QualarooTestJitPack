@@ -82,7 +82,7 @@ public class InMemoryLocalStorage implements LocalStorage {
     }
 
 
-    @Override public synchronized SurveyStatus isSurveyShowed(int surveyId) {
+    @Override public synchronized SurveyStatus isSurveySubmitted(int surveyId) {
         return surveyStatusMap.get(surveyId);
     }
 

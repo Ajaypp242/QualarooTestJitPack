@@ -1,5 +1,7 @@
 package com.qualaroo.internal;
 
+import android.util.Log;
+
 import com.qualaroo.internal.model.Survey;
 import com.qualaroo.internal.storage.LocalStorage;
 
@@ -17,6 +19,7 @@ public class UserGroupPercentageProvider {
 
     int userGroupPercent(Survey survey) {
         Integer percent = localStorage.getUserGroupPercent(survey);
+        Log.d("SAMPLE", String.valueOf(percent));
         if (percent == null) {
             percent = random.nextInt(100);
             localStorage.storeUserGroupPercent(survey, percent);

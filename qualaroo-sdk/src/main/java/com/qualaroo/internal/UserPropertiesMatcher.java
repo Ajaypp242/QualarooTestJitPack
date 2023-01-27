@@ -18,6 +18,8 @@ import java.util.Set;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY;
 
+import android.util.Log;
+
 @RestrictTo(LIBRARY)
 public final class UserPropertiesMatcher extends SurveySpecMatcher {
 
@@ -31,6 +33,7 @@ public final class UserPropertiesMatcher extends SurveySpecMatcher {
 
     @Override boolean matches(Survey survey) {
         String customMap = survey.spec().requireMap().customMap();
+        Log.d("SPECMATCHERS", "UserPropertiesMatcher " + doesUserPropertiesMatch(customMap));
         return doesUserPropertiesMatch(customMap);
     }
 

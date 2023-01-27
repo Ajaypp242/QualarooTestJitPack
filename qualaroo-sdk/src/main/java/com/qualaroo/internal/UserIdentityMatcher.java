@@ -1,5 +1,7 @@
 package com.qualaroo.internal;
 
+import android.util.Log;
+
 import com.qualaroo.internal.model.Survey;
 
 public class UserIdentityMatcher extends SurveySpecMatcher {
@@ -21,6 +23,7 @@ public class UserIdentityMatcher extends SurveySpecMatcher {
         }
         switch (targetType) {
             case TARGET_TYPE_KNOWN:
+                Log.d("SPECMATCHERS", "UserIdentityMatcher " + String.valueOf(userInfo.getUserId() != null));
                 return userInfo.getUserId() != null;
             case TARGET_TYPE_UNKNOWN:
                 return userInfo.getUserId() == null;

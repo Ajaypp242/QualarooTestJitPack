@@ -1,5 +1,7 @@
 package com.qualaroo.internal;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
 

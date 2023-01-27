@@ -141,7 +141,7 @@ public class DatabaseLocalStorage implements LocalStorage {
     }
 
     @Override
-    public SurveyStatus isSurveyShowed(int surveyId) {
+    public SurveyStatus isSurveySubmitted(int surveyId) {
         SurveyStatus.Builder builder = SurveyStatus.builder();
         builder.setSurveyId(surveyId);
         Cursor cursor = null;

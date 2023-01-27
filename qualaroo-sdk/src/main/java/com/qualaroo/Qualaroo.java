@@ -175,6 +175,7 @@ public final class Qualaroo extends QualarooBase implements QualarooSdk {
             @Override
             public void run() {
                 List<Survey> surveys = surveysRepository.getSurveys();
+                Log.d("Survey",surveys.toString());
                 Survey surveyToDisplay = null;
                 for (final Survey survey : surveys) {
                     if (alias.equals(survey.canonicalName())) {
@@ -193,6 +194,7 @@ public final class Qualaroo extends QualarooBase implements QualarooSdk {
     }
 
     private boolean showSurvey(@NonNull final Survey survey, @NonNull final SurveyOptions options, final SurveyDisplayQualifier surveyDisplayQualifier) {
+//        Log.d("canDisplaySurvey", String.valueOf(canDisplaySurvey(survey, options, surveyDisplayQualifier)));
         if (canDisplaySurvey(survey, options, surveyDisplayQualifier)) {
             QualarooLogger.debug("Displaying survey " + survey.canonicalName());
             Language targetLanguage = LanguageHelper.getTargetLanguage(survey, preferredLanguage);
@@ -209,12 +211,12 @@ public final class Qualaroo extends QualarooBase implements QualarooSdk {
         return false;
     }
 
-    public boolean isSurveyShown(@NonNull final String surveyId){
+    public boolean isSurveySubmitted(@NonNull final String surveyId){
         if (surveyId.length() == 0) {
             throw new IllegalArgumentException("SurveyId can't be null or empty!");
         }
-        SurveyStatus status =   localStorage.isSurveyShowed(Integer.parseInt(surveyId));
-        return  status.hasBeenSeen();
+        SurveyStatus status =   localStorage.isSurveySubmitted(Integer.parseInt(surveyId));
+        return  status.hasBeenFinished();
     }
 
 
@@ -536,7 +538,7 @@ public final class Qualaroo extends QualarooBase implements QualarooSdk {
         }
 
         @Override
-        public boolean isSurveyShown(@NonNull String surveyId) {
+        public boolean isSurveySubmitted(@NonNull String surveyId) {
             return false;
         }
 
