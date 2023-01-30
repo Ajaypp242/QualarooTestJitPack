@@ -91,10 +91,10 @@ afterEvaluate {
     publishing {
         publications {
             release(MavenPublication) {
-                from components.productionRelease
                 groupId 'com.qualaroo'
                 artifactId 'qualaroo-sdk'
                 version project.sdkVersionMaven
+                from components.productionRelease
             }
         }
     }
