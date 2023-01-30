@@ -6,7 +6,7 @@ plugins {
 
 int major = 0
 int minor = 0
-int patch = 2
+int patch = 4
 
 project.ext {
     sdkVersionCode = 10000 * major + 100 * minor + patch
