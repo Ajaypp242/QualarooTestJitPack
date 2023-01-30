@@ -1,10 +1,12 @@
-/*
- * Copyright © 2017 Qualaroo. All rights reserved.
- */
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+    id 'maven-publish'
+}
 
-int major = 2
-int minor = 1
-int patch = 1
+int major = 0
+int minor = 0
+int patch = 2
 
 project.ext {
     sdkVersionCode = 10000 * major + 100 * minor + patch
@@ -12,15 +14,9 @@ project.ext {
     sdkVersionMaven = "$sdkVersion"
 }
 
-//apply from: 'quality.gradle'
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'maven-publish'
-
 android {
     compileSdkVersion 32
     resourcePrefix 'qualaroo__'
-
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 32
@@ -28,6 +24,7 @@ android {
         versionCode project.sdkVersionCode
         versionName project.sdkVersion
     }
+
     buildTypes {
         release {
             minifyEnabled true
@@ -45,21 +42,13 @@ android {
             buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
         }
     }
-
-    sourceSets {
-        String commonTestClasses = 'src/commonTest/java'
-        test {
-            java.srcDirs += commonTestClasses
-        }
-        androidTest {
-            java.srcDirs += commonTestClasses
-        }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
-
-    testOptions {
-        animationsDisabled = true
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
-
     flavorDimensions 'api'
     productFlavors {
 //        staging {
@@ -70,11 +59,6 @@ android {
             dimension 'api'
         }
     }
-}
-
-repositories {
-    jcenter()
-    google()
 }
 
 dependencies {
@@ -103,109 +87,14 @@ dependencies {
     }
 }
 
-task generateJavadoc(type: Javadoc) {
-    description "Generates Javadoc"
-    source android.sourceSets.main.java.srcDirs
-    ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
-    classpath = files() + files(ext.androidJar)
-    options.links("http://docs.oracle.com/javase/7/docs/api/")
-    options.links("http://d.android.com/reference/")
-    options.addStringOption('Xdoclint:none', '-quiet')
-    include '**//*Qualaroo.java'
-    include '**//*QualarooSdk.java'
-    include '**//*QualarooSurveyEventReceiver.java'
-    include '**//*SurveyOptions.java'
-}
-
-task javadocJar(type: Jar, dependsOn: generateJavadoc) {
-    classifier = 'javadoc'
-    from generateJavadoc.destinationDir
-}
-
-task sourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    include(
-            "**/QualarooSdk.java",
-            "**/SurveyOptions.java",
-            "**/QualarooSurveyEventReceiver.java"
-    )
-    classifier = 'sources'
-}
-
-gradle.taskGraph.whenReady { taskGraph ->
-    def tasks = taskGraph.getAllTasks()
-    logging.captureStandardOutput LogLevel.INFO
-    tasks.findAll { it.name == "publish"}.each { task ->
-        String msg = "Please use an appropriate task to make sure that you are pushing either production or staging!"
-//        throw new StopActionException(msg)
-    }
-}
-
-artifacts {
-    archives sourcesJar
-//    archives javadocJar
-}
-
-publishing {
-    repositories {
-        maven {
-            name 'QualarooProduction'
-//            url "s3://qualaroo-android-sdk/libs/"
-            url "/Users/ajaymandrawal/Documents/Office/QualrooAndroidSDK/v211/"
-//            credentials(AwsCredentials) {
-//                accessKey QUALAROO_S3_ACCESS_KEY
-//                secretKey QUALAROO_S3_SECRET_KEY
-//            }
-        }
-        maven {
-            name 'QualarooSnapshots'
-//            url "s3://qualaroo-android-sdk/snapshots/"
-            url "/Users/ajaymandrawal/Documents/Office/QualrooAndroidSDK/v211/"
-//            credentials(AwsCredentials) {
-//                accessKey QUALAROO_S3_ACCESS_KEY
-//                secretKey QUALAROO_S3_SECRET_KEY
-//            }
-        }
-        mavenLocal()
-    }
-
-    publications {
-        aar(MavenPublication) {
-            groupId 'com.qualaroo'
-            artifactId 'qualaroo-sdk'
-            version project.sdkVersionMaven
-            artifact("$buildDir/outputs/aar/qualaroo-sdk-production-release.aar")
-            artifact sourcesJar
-//            artifact javadocJar
-            pom.withXml {
-                println(configurations.implementation.getAllDependencies())
-                def dependenciesNode = asNode().appendNode('dependencies')
-
-                // List all compile dependencies and write to POM
-                configurations.implementation.getAllDependencies().each { Dependency dep ->
-                    if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified")
-                        return // ignore invalid dependencies
-
-                    def dependencyNode = dependenciesNode.appendNode('dependency')
-                    dependencyNode.appendNode('groupId', dep.group)
-                    dependencyNode.appendNode('artifactId', dep.name)
-                    dependencyNode.appendNode('version', dep.version)
-
-                    if (!dep.transitive) {
-                        // If this dependency is transitive, we should force exclude all its dependencies them from the POM
-                        def exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
-                        exclusionNode.appendNode('groupId', '*')
-                        exclusionNode.appendNode('artifactId', '*')
-                    } else if (!dep.properties.excludeRules.empty) {
-                        // Otherwise add specified exclude rules
-                        def exclusionsNode = dependencyNode.appendNode('exclusions')
-                        dep.properties.excludeRules.each { ExcludeRule rule ->
-                            def exclusionNode = exclusionsNode.appendNode('exclusion')
-                            exclusionNode.appendNode('groupId', rule.group ?: '*')
-                            exclusionNode.appendNode('artifactId', rule.module ?: '*')
-                        }
-                    }
-                }
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.productionRelease
+                groupId 'com.qualaroo'
+                artifactId 'qualaroo-sdk'
+                version project.sdkVersionMaven
             }
         }
     }
@@ -213,3 +102,219 @@ publishing {
 
 
 
+
+///*
+// * Copyright © 2017 Qualaroo. All rights reserved.
+// */
+//
+//int major = 2
+//int minor = 1
+//int patch = 1
+//
+//project.ext {
+//    sdkVersionCode = 10000 * major + 100 * minor + patch
+//    sdkVersion = "$major.$minor.$patch"
+//    sdkVersionMaven = "$sdkVersion"
+//}
+//
+////apply from: 'quality.gradle'
+//apply plugin: 'com.android.library'
+//apply plugin: 'kotlin-android'
+//apply plugin: 'maven-publish'
+//
+//android {
+//    compileSdkVersion 32
+//    resourcePrefix 'qualaroo__'
+//
+//    defaultConfig {
+//        minSdkVersion 15
+//        targetSdkVersion 32
+//        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+//        versionCode project.sdkVersionCode
+//        versionName project.sdkVersion
+//    }
+//    buildTypes {
+//        release {
+//            minifyEnabled true
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            consumerProguardFiles 'proguard-rules.pro'
+//            lintOptions {
+//                abortOnError true
+//                disable 'InvalidPackage'
+//            }
+//            buildConfigField("long", "VERSION_CODE", "${defaultConfig.versionCode}")
+//            buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")        }
+//        debug {
+//            minifyEnabled false
+//            buildConfigField("long", "VERSION_CODE", "${defaultConfig.versionCode}")
+//            buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
+//        }
+//    }
+//
+//    sourceSets {
+//        String commonTestClasses = 'src/commonTest/java'
+//        test {
+//            java.srcDirs += commonTestClasses
+//        }
+//        androidTest {
+//            java.srcDirs += commonTestClasses
+//        }
+//    }
+//
+//    testOptions {
+//        animationsDisabled = true
+//    }
+//
+//    flavorDimensions 'api'
+//    productFlavors {
+////        staging {
+////            dimension 'api'
+////        }
+//
+//        production {
+//            dimension 'api'
+//        }
+//    }
+//}
+//
+//repositories {
+//    jcenter()
+//    google()
+//}
+//
+//dependencies {
+//    implementation 'androidx.appcompat:appcompat:1.3.1'
+//    implementation 'com.google.android.material:material:1.4.0'
+//    implementation 'com.squareup.okhttp3:okhttp:3.12.2'
+//    implementation 'com.squareup.okhttp3:logging-interceptor:3.9.1'
+//    implementation 'com.google.code.gson:gson:2.8.5'
+//    implementation "androidx.work:work-runtime:2.7.1"
+//    implementation 'com.github.bumptech.glide:glide:4.11.0'
+//    // Glide v4 uses this new annotation processor -- see https://bumptech.github.io/glide/doc/generatedapi.html
+//    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+//    testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+//    testImplementation 'org.mockito:mockito-core:4.7.0'
+//    testImplementation 'com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0'
+//    testImplementation 'junit:junit:4.12'
+//    testImplementation 'com.squareup.okhttp3:mockwebserver:3.11.0'
+//
+//    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+//    androidTestImplementation 'androidx.test:rules:1.3.0'
+//    androidTestImplementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+//    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+//    androidTestImplementation 'androidx.test.espresso:espresso-intents:3.3.0'
+//    androidTestImplementation ('com.squareup.okhttp3:mockwebserver:3.11.0') {
+//        exclude group: 'org.bouncycastle'
+//    }
+//}
+//
+//task generateJavadoc(type: Javadoc) {
+//    description "Generates Javadoc"
+//    source android.sourceSets.main.java.srcDirs
+//    ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
+//    classpath = files() + files(ext.androidJar)
+//    options.links("http://docs.oracle.com/javase/7/docs/api/")
+//    options.links("http://d.android.com/reference/")
+//    options.addStringOption('Xdoclint:none', '-quiet')
+//    include '**//*Qualaroo.java'
+//    include '**//*QualarooSdk.java'
+//    include '**//*QualarooSurveyEventReceiver.java'
+//    include '**//*SurveyOptions.java'
+//}
+//
+//task javadocJar(type: Jar, dependsOn: generateJavadoc) {
+//    classifier = 'javadoc'
+//    from generateJavadoc.destinationDir
+//}
+//
+//task sourcesJar(type: Jar) {
+//    from android.sourceSets.main.java.srcDirs
+//    include(
+//            "**/QualarooSdk.java",
+//            "**/SurveyOptions.java",
+//            "**/QualarooSurveyEventReceiver.java"
+//    )
+//    classifier = 'sources'
+//}
+//
+//gradle.taskGraph.whenReady { taskGraph ->
+//    def tasks = taskGraph.getAllTasks()
+//    logging.captureStandardOutput LogLevel.INFO
+//    tasks.findAll { it.name == "publish"}.each { task ->
+//        String msg = "Please use an appropriate task to make sure that you are pushing either production or staging!"
+////        throw new StopActionException(msg)
+//    }
+//}
+//
+//artifacts {
+//    archives sourcesJar
+////    archives javadocJar
+//}
+//
+//publishing {
+//    repositories {
+//        maven {
+//            name 'QualarooProduction'
+////            url "s3://qualaroo-android-sdk/libs/"
+//            url "/Users/ajaymandrawal/Documents/Office/QualrooAndroidSDK/v211/"
+////            credentials(AwsCredentials) {
+////                accessKey QUALAROO_S3_ACCESS_KEY
+////                secretKey QUALAROO_S3_SECRET_KEY
+////            }
+//        }
+//        maven {
+//            name 'QualarooSnapshots'
+////            url "s3://qualaroo-android-sdk/snapshots/"
+//            url "/Users/ajaymandrawal/Documents/Office/QualrooAndroidSDK/v211/"
+////            credentials(AwsCredentials) {
+////                accessKey QUALAROO_S3_ACCESS_KEY
+////                secretKey QUALAROO_S3_SECRET_KEY
+////            }
+//        }
+//        mavenLocal()
+//    }
+//
+//    publications {
+//        aar(MavenPublication) {
+//            groupId 'com.qualaroo'
+//            artifactId 'qualaroo-sdk'
+//            version project.sdkVersionMaven
+//            artifact("$buildDir/outputs/aar/qualaroo-sdk-production-release.aar")
+//            artifact sourcesJar
+////            artifact javadocJar
+//            pom.withXml {
+//                println(configurations.implementation.getAllDependencies())
+//                def dependenciesNode = asNode().appendNode('dependencies')
+//
+//                // List all compile dependencies and write to POM
+//                configurations.implementation.getAllDependencies().each { Dependency dep ->
+//                    if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified")
+//                        return // ignore invalid dependencies
+//
+//                    def dependencyNode = dependenciesNode.appendNode('dependency')
+//                    dependencyNode.appendNode('groupId', dep.group)
+//                    dependencyNode.appendNode('artifactId', dep.name)
+//                    dependencyNode.appendNode('version', dep.version)
+//
+//                    if (!dep.transitive) {
+//                        // If this dependency is transitive, we should force exclude all its dependencies them from the POM
+//                        def exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+//                        exclusionNode.appendNode('groupId', '*')
+//                        exclusionNode.appendNode('artifactId', '*')
+//                    } else if (!dep.properties.excludeRules.empty) {
+//                        // Otherwise add specified exclude rules
+//                        def exclusionsNode = dependencyNode.appendNode('exclusions')
+//                        dep.properties.excludeRules.each { ExcludeRule rule ->
+//                            def exclusionNode = exclusionsNode.appendNode('exclusion')
+//                            exclusionNode.appendNode('groupId', rule.group ?: '*')
+//                            exclusionNode.appendNode('artifactId', rule.module ?: '*')
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//
+//
